@@ -1,7 +1,7 @@
 {
   "name": "stackit",
   "version": "0.1.0",
-  "description": "Minimalista, rápido e determinístico — um gerenciador de dependências baseado em Git.",
+  "description": "Minimal, fast, and deterministic — a Git-based dependency manager.",
   "license": "MIT",
   "author": "",
   "repository": {

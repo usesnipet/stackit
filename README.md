@@ -1,31 +1,31 @@
 # 📦 stackit
 
-> Minimalista, rápido e determinístico — um gerenciador de dependências baseado em Git.
+> Minimal, fast, and deterministic — a Git-based dependency manager.
 
-O **stackit** é uma alternativa leve ao npm/yarn quando você só precisa gerenciar dependências diretamente de repositórios Git.
+**stackit** is a lightweight alternative to npm/yarn when you only need to manage dependencies directly from Git repositories.
 
-Sem registry. Sem complexidade. Só Git.
-
----
-
-# 🚀 Motivação
-
-Gerenciar dependências via Git normalmente envolve:
-
-* submodules (complexos e chatos)
-* scripts manuais
-* falta de controle de versão determinístico
-
-O **stackit** resolve isso com:
-
-* configuração simples
-* instalação automatizada
-* suporte a branches, tags e commits
-* compatibilidade com repositórios privados
+No registry. No complexity. Just Git.
 
 ---
 
-# 📥 Instalação
+# 🚀 Motivation
+
+Managing dependencies via Git usually involves:
+
+* submodules (complex and annoying)
+* manual scripts
+* lack of deterministic version control
+
+**stackit** solves this with:
+
+* simple configuration
+* automated installation
+* support for branches, tags, and commits
+* compatibility with private repositories
+
+---
+
+# 📥 Installation
 
 ```bash
 npm install -g stackit
@@ -33,9 +33,9 @@ npm install -g stackit
 
 ---
 
-# ⚙️ Configuração
+# ⚙️ Configuration
 
-Crie um arquivo `stackit.json` na raiz do projeto:
+Create a `stackit.json` file at the project root:
 
 ```json
 {
@@ -47,16 +47,16 @@ Crie um arquivo `stackit.json` na raiz do projeto:
 }
 ```
 
-Ou apenas execute o comando `stackit init` para criar um arquivo `stackit.json` com o template padrão.
+Or just run `stackit init` to generate a `stackit.json` file with the default template.
 
 ---
 
-## 🧠 Como funciona
+## 🧠 How it works
 
-* Cada dependência é um repositório Git
-* O valor define a referência:
+* Each dependency is a Git repository
+* The value defines the reference:
 
-| Valor     | Tipo   |
+| Value     | Type   |
 | --------- | ------ |
 | `v1.0.0`  | Tag    |
 | `main`    | Branch |
@@ -64,22 +64,22 @@ Ou apenas execute o comando `stackit init` para criar um arquivo `stackit.json` 
 
 ---
 
-# 📦 Instalação de dependências
+# 📦 Installing dependencies
 
 ```bash
 stackit install
 ```
 
-### O que acontece:
+### What happens:
 
-* Clona os repositórios em `dir`
-* Atualiza repositórios existentes (`git fetch`)
-* Faz checkout da versão especificada
-* Nomeia automaticamente as pastas
+* Clones repositories into `dir`
+* Updates existing repositories (`git fetch`)
+* Checks out the specified version
+* Automatically names folders
 
 ---
 
-## 📁 Estrutura gerada
+## 📁 Generated structure
 
 ```bash
 folder-name/
@@ -89,13 +89,13 @@ folder-name/
 
 ---
 
-# 🏷️ Criar tags
+# 🏷️ Creating tags
 
 ```bash
 stackit tag 0.0.1
 ```
 
-Com push:
+With push:
 
 ```bash
 stackit tag 0.0.1 --push
@@ -103,7 +103,7 @@ stackit tag 0.0.1 --push
 
 ---
 
-# 🔄 Atualizar dependências
+# 🔄 Updating dependencies
 
 ```bash
 stackit update
@@ -111,7 +111,7 @@ stackit update
 
 ---
 
-# ➕ Adicionar dependência
+# ➕ Adding a dependency
 
 ```bash
 stackit add https://github.com/user/repo.git --ref main
@@ -119,17 +119,17 @@ stackit add https://github.com/user/repo.git --ref main
 
 ---
 
-# 🔐 Repositórios privados
+# 🔐 Private repositories
 
-O **stackit** suporta qualquer método que o Git suporta:
+**stackit** supports anything Git supports:
 
-## ✅ SSH (recomendado)
+## ✅ SSH (recommended)
 
 ```bash
 git@github.com:user/repo.git
 ```
 
-## ✅ HTTPS com credenciais
+## ✅ HTTPS with credentials
 
 ```bash
 https://github.com/user/repo.git
@@ -137,13 +137,13 @@ https://github.com/user/repo.git
 
 ## ✅ Git Credential Manager
 
-Usa credenciais salvas no sistema automaticamente.
+Uses credentials saved on the system automatically.
 
 ---
 
-# 🧠 Resolução de nomes
+# 🧠 Name resolution
 
-Os repositórios são convertidos automaticamente:
+Repositories are converted automatically:
 
 ```
 https://github.com/user/repo.git
@@ -154,64 +154,64 @@ https://github.com/user/repo.git
 
 # ⚡ Features
 
-* ⚡ Instalação rápida via Git
-* 🧠 Resolução inteligente de versão
-* 🔐 Suporte a repositórios privados
-* 📁 Estrutura simples
-* 🔄 Atualização fácil
-* 🏷️ Versionamento com tags
-* 🚫 Sem registry
+* ⚡ Fast installation via Git
+* 🧠 Smart version resolution
+* 🔐 Support for private repositories
+* 📁 Simple structure
+* 🔄 Easy updates
+* 🏷️ Tag-based versioning
+* 🚫 No registry
 
 ---
 
 # 🛠️ Roadmap
 
-* [ ] Lockfile completo
-* [ ] Cache global de repositórios
-* [ ] Instalação paralela
+* [ ] Full lockfile
+* [ ] Global repository cache
+* [ ] Parallel installation
 * [ ] Hooks (`postinstall`)
 
 ---
 
-# ⚠️ Limitações
+# ⚠️ Limitations
 
-* Não resolve dependências transitivas
-* Não possui registry (por design)
-* Não substitui npm/yarn/pnpm
-
----
-
-# 💡 Casos de uso
-
-* Monorepos distribuídos
-* Plugins externos
-* Infra como código
-* Compartilhamento de libs privadas
+* Does not resolve transitive dependencies
+* No registry (by design)
+* Does not replace npm/yarn/pnpm
 
 ---
 
-# 🤝 Contribuição
+# 💡 Use cases
 
-Pull requests são bem-vindos!
+* Distributed monorepos
+* External plugins
+* Infrastructure as code
+* Sharing private libraries
+
+---
+
+# 🤝 Contributing
+
+Pull requests are welcome!
 
 1. Fork
-2. Crie sua branch
+2. Create your branch
 3. Commit
 4. Push
-5. Abra um PR
+5. Open a PR
 
 ---
 
-# 📄 Licença
+# 📄 License
 
 MIT
 
 ---
 
-# 👀 Comparação
+# 👀 Comparison
 
-| Ferramenta     | Complexidade | Git-native | Determinístico |
+| Tool           | Complexity   | Git-native | Deterministic |
 | -------------- | ------------ | ---------- | -------------- |
-| npm            | Alta         | ❌         | ✅             |
-| git submodules | Alta         | ✅         | 😐             |
-| stackit        | Baixa        | ✅         | ✅             |
+| npm            | High         | ❌         | ✅             |
+| git submodules | High         | ✅         | 😐             |
+| stackit        | Low          | ✅         | ✅             |
