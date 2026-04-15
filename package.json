@@ -1,0 +1,39 @@
+{
+  "name": "stackit",
+  "version": "0.1.0",
+  "description": "Minimalista, rápido e determinístico — um gerenciador de dependências baseado em Git.",
+  "license": "MIT",
+  "author": "",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/user/stackit.git"
+  },
+  "keywords": [
+    "git",
+    "dependencies",
+    "vendor",
+    "monorepo",
+    "cli"
+  ],
+  "type": "module",
+  "bin": {
+    "stackit": "./bin/stackit.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "test": "vitest run",
+    "lint": "eslint .",
+    "format": "prettier -w ."
+  },
+  "dependencies": {
+    "commander": "^14.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "eslint": "^9.0.0",
+    "prettier": "^3.0.0",
+    "vitest": "^3.0.0"
+  }
+}
