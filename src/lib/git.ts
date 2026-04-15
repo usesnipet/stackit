@@ -1,12 +1,14 @@
 import { spawn } from "node:child_process";
+import { logCommand } from "./logger.js";
 
-/**
- * @param {string} cmd
- * @param {string[]} args
- * @param {string} cwd
- * @returns {Promise<{ stdout: string; stderr: string; exitCode: number }>}
- */
-export function run(cmd, args, cwd) {
+export type RunResult = {
+  stdout: string;
+  stderr: string;
+  exitCode: number;
+};
+
+export function run(cmd: string, args: string[], cwd: string): Promise<RunResult> {
+  logCommand(cwd, cmd, args);
   return new Promise((resolve) => {
     const child = spawn(cmd, args, { cwd, stdio: ["ignore", "pipe", "pipe"] });
     let stdout = "";
@@ -17,17 +19,10 @@ export function run(cmd, args, cwd) {
   });
 }
 
-/**
- * @param {string} cwd
- * @param {string[]} args
- */
-export async function runGit(cwd, args) {
+export async function runGit(cwd: string, args: string[]): Promise<string> {
   const { exitCode, stdout, stderr } = await run("git", args, cwd);
   if (exitCode !== 0) {
-    const msg = [
-      `git ${args.join(" ")} failed (exit ${exitCode})`,
-      stderr.trim() || stdout.trim(),
-    ]
+    const msg = [`git ${args.join(" ")} failed (exit ${exitCode})`, stderr.trim() || stdout.trim()]
       .filter(Boolean)
       .join("\n");
     throw new Error(msg);

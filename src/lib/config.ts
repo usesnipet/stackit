@@ -3,16 +3,12 @@ import path from "node:path";
 
 export const CONFIG_FILENAME = "stackit.json";
 
-/**
- * @typedef {Object} StackitConfig
- * @property {string} dir
- * @property {Record<string, string>} dependencies
- */
+export type StackitConfig = {
+  dir: string;
+  dependencies: Record<string, string>;
+};
 
-/**
- * @param {string} p
- */
-export async function pathExists(p) {
+export async function pathExists(p: string): Promise<boolean> {
   try {
     await stat(p);
     return true;
@@ -21,31 +17,25 @@ export async function pathExists(p) {
   }
 }
 
-/**
- * @param {string} cwd
- * @returns {Promise<StackitConfig>}
- */
-export async function readConfig(cwd) {
+export async function readConfig(cwd: string): Promise<StackitConfig> {
   const p = path.join(cwd, CONFIG_FILENAME);
   const raw = await readFile(p, "utf8");
-  /** @type {unknown} */
-  const parsed = JSON.parse(raw);
+  const parsed: unknown = JSON.parse(raw);
+
   if (!parsed || typeof parsed !== "object") {
     throw new Error(`Invalid ${CONFIG_FILENAME}: expected an object`);
   }
 
-  // @ts-ignore - runtime validation below
-  const dir = parsed.dir;
-  // @ts-ignore
-  const dependencies = parsed.dependencies;
+  const maybe = parsed as Partial<StackitConfig> & { dependencies?: unknown };
 
-  if (typeof dir !== "string" || !dir.trim()) {
+  if (typeof maybe.dir !== "string" || !maybe.dir.trim()) {
     throw new Error(`Invalid ${CONFIG_FILENAME}: "dir" must be a non-empty string`);
   }
-  if (!dependencies || typeof dependencies !== "object") {
+  if (!maybe.dependencies || typeof maybe.dependencies !== "object") {
     throw new Error(`Invalid ${CONFIG_FILENAME}: "dependencies" must be an object`);
   }
-  for (const [k, v] of Object.entries(dependencies)) {
+
+  for (const [k, v] of Object.entries(maybe.dependencies as Record<string, unknown>)) {
     if (typeof k !== "string" || typeof v !== "string") {
       throw new Error(
         `Invalid ${CONFIG_FILENAME}: dependencies must be { [repoUrl: string]: ref: string }`,
@@ -53,14 +43,10 @@ export async function readConfig(cwd) {
     }
   }
 
-  return { dir, dependencies };
+  return { dir: maybe.dir, dependencies: maybe.dependencies as Record<string, string> };
 }
 
-/**
- * @param {string} cwd
- * @param {StackitConfig} config
- */
-export async function writeConfig(cwd, config) {
+export async function writeConfig(cwd: string, config: StackitConfig): Promise<void> {
   const p = path.join(cwd, CONFIG_FILENAME);
   const content = JSON.stringify(config, null, 2) + "\n";
   await writeFile(p, content, "utf8");

@@ -1,11 +1,10 @@
+import type { Command } from "commander";
 import path from "node:path";
 import { readConfig } from "../lib/config.js";
 import { ensureDependency } from "../lib/dependency.js";
+import { log } from "../lib/logger.js";
 
-/**
- * @param {import("commander").Command} program
- */
-export function registerUpdateCommand(program) {
+export function registerUpdateCommand(program: Command): void {
   program
     .command("update")
     .description("Fetch and re-checkout dependencies (alias of install)")
@@ -15,11 +14,16 @@ export function registerUpdateCommand(program) {
       const vendorDir = path.join(cwd, config.dir);
       const entries = Object.entries(config.dependencies);
 
+      log("info", `Updating ${entries.length} dependenc${entries.length === 1 ? "y" : "ies"}...`);
+      log("info", `Target directory: ${vendorDir}`);
+
       for (const [repoUrl, ref] of entries) {
-        // eslint-disable-next-line no-console
-        console.log(`• ${repoUrl} @ ${ref}`);
+        log("info", `Updating ${repoUrl} @ ${ref}`);
         await ensureDependency(vendorDir, repoUrl, ref);
+        log("info", `Done: ${repoUrl}`);
       }
+
+      log("info", "Update complete.");
     });
 }
 

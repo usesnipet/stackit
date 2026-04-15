@@ -1,13 +1,12 @@
-#!/usr/bin/env node
 import { pathToFileURL } from "node:url";
-import { main } from "../src/index.js";
+import { main } from "../index.js";
 
 async function run() {
   try {
     await main(process.argv);
   } catch (err) {
     // eslint-disable-next-line no-console
-    console.error(String(err?.message || err));
+    console.error(String((err as any)?.message || err));
     process.exitCode = 1;
   }
 }
