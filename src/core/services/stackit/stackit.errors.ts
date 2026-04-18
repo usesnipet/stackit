@@ -34,6 +34,7 @@ export enum InstallErrorType {
   UNEXPECTED_ERROR = "UNEXPECTED_ERROR",
   CLONE_DEPENDENCY_ERROR = "CLONE_DEPENDENCY_ERROR",
   STATE_NOT_INITIALIZED = "STATE_NOT_INITIALIZED",
+  UPDATE_GLOBAL_USED_IN_FAILED = "UPDATE_GLOBAL_USED_IN_FAILED",
 }
 export class InstallError extends StackitError {
   override code = "INSTALL_ERROR";
@@ -46,4 +47,25 @@ export class InstallError extends StackitError {
     this.name = "InstallError";
   }
 
+}
+
+export enum RemoveErrorType {
+  STATE_NOT_INITIALIZED = "STATE_NOT_INITIALIZED",
+  DEPENDENCY_NOT_INSTALLED = "DEPENDENCY_NOT_INSTALLED",
+  REMOVE_FAILED = "REMOVE_FAILED",
+  UPDATE_STATE_FAILED = "UPDATE_STATE_FAILED",
+  UPDATE_GLOBAL_USED_IN_FAILED = "UPDATE_GLOBAL_USED_IN_FAILED",
+}
+
+export class RemoveError extends StackitError {
+  override code = "REMOVE_ERROR";
+
+  constructor(
+    public readonly type: RemoveErrorType,
+    message: string = "Error removing dependency",
+    cause?: unknown,
+  ) {
+    super(message, { cause });
+    this.name = "RemoveError";
+  }
 }

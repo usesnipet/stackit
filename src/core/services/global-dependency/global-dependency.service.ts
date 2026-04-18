@@ -65,12 +65,40 @@ export const createGlobalDependencyService = (deps: GlobalDependencyDeps) => {
     if (!dependency) {
       return err(new GlobalDependencyError(GlobalDependencyErrorType.DEPENDENCY_NOT_FOUND, "Dependency not found"));
     }
+    const additions = Array.isArray(usedIn) ? usedIn : [usedIn];
+    const mergedUsedIn = [...new Set([...dependency.usedIn, ...additions])];
     const updatedDependencies = {
       ...state?.dependencies,
       [url]: {
         ...dependency,
-        usedIn: [...dependency.usedIn, ...(Array.isArray(usedIn) ? usedIn : [usedIn])],
-      }
+        usedIn: mergedUsedIn,
+      },
+    };
+    return updateGlobalDependencies({ dependencies: updatedDependencies }, persist);
+  }
+
+  async function removeUsedIn(
+    url: string,
+    projectPath: string,
+    persist: boolean = true,
+  ): Promise<Result<void, GlobalDependencyError>> {
+    if (!state) {
+      return ok(undefined);
+    }
+    const dependency = state.dependencies[url];
+    if (!dependency) {
+      return ok(undefined);
+    }
+    const filteredUsedIn = dependency.usedIn.filter((p) => p !== projectPath);
+    if (filteredUsedIn.length === dependency.usedIn.length) {
+      return ok(undefined);
+    }
+    const updatedDependencies = {
+      ...state.dependencies,
+      [url]: {
+        ...dependency,
+        usedIn: filteredUsedIn,
+      },
     };
     return updateGlobalDependencies({ dependencies: updatedDependencies }, persist);
   }
@@ -255,6 +283,7 @@ export const createGlobalDependencyService = (deps: GlobalDependencyDeps) => {
     },
     checkout,
     addUsedIn,
+    removeUsedIn,
     getRepoPath,
     getState: () => state,
   }
