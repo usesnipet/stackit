@@ -1,217 +1,85 @@
-# 📦 stackit
+# Core Features
+- [] add stackit to project
+- [] install dependencies
+- [] update dependencies
+- [] remove dependencies
+- [] clear global dependencies directory (with "--all" or "--force" option)
+- [] release a new version (promote changes to a new version)
 
-> Minimal, fast, and deterministic — a Git-based dependency manager.
+# Extended Features
+- [] stackit dependencies with other stackit dependencies (dependencies with dependencies)
+- [] stackit hook (hook to run before and after a command)
+- [] stackit alias (alias to run a command)
 
-**stackit** is a lightweight alternative to npm/yarn when you only need to manage dependencies directly from Git repositories.
 
-No registry. No complexity. Just Git.
-
----
-
-# 🚀 Motivation
-
-Managing dependencies via Git usually involves:
-
-* submodules (complex and annoying)
-* manual scripts
-* lack of deterministic version control
-
-**stackit** solves this with:
-
-* simple configuration
-* automated installation
-* support for branches, tags, and commits
-* compatibility with private repositories
-
----
-
-# 📥 Installation
-
+## Init
+Initializes a new stackit project.
 ```bash
-npm install -g stackit
+stackit init
 ```
+- Create a `stackit.json` file on the current directory.
+- If a stackit.json file already exists, no action is taken.
+- On creating ask the user to provide a:
+  - dependencies directory
 
----
 
-# ⚙️ Configuration
-
-Create a `stackit.json` file at the project root:
-
-```json
-{
-  "dir": "vendor",
-  "dependencies": {
-    "https://github.com/user/repo-a.git": "v1.0.0",
-    "https://github.com/user/repo-b.git": "main"
-  }
-}
-```
-
-Or just run `stackit init` to generate a `stackit.json` file with the default template.
-
----
-
-## 🧠 How it works
-
-* Each dependency is a Git repository
-* The value defines the reference:
-
-| Value     | Type   |
-| --------- | ------ |
-| `v1.0.0`  | Tag    |
-| `main`    | Branch |
-| `a1b2c3d` | Commit |
-
----
-
-# 📦 Installing dependencies
-
+## Install
+Installs a dependency.
 ```bash
-stackit install
+stackit install <git-url> [--branch <branch>|--tag <tag>] [--path <subdirectory>]
 ```
+### Options
+- `--branch <branch>`: Install the dependency from a specific branch.
+- `--tag <tag>`: Install the dependency from a specific tag.
+- `--path <subdirectory>`: Install the dependency into a specific subdirectory.
 
-### What happens:
+### Actions
+- Add the dependency to the `stackit.json` file.
+- Clone the dependency into the global stackit dependencies directory.
+- Copy the dependency in global dependencies directory into the project dependencies directory (without the git repository).
+- Add project directory to global stackit directory to control used git repositories in global dependencies directory.
+- If the dependency is already installed, no action is taken.
 
-* Clones repositories into `dir`
-* Updates existing repositories (`git fetch`)
-* Checks out the specified version
-* Automatically names folders
-
----
-
-## 📁 Generated structure
-
+## Remove
+Removes a dependency.
 ```bash
-folder-name/
-  user-repo-a/
-  user-repo-b/
+stackit remove <dependency>
 ```
+### Actions
+- Remove the dependency from the `stackit.json` file.
+- Remove the dependency from the project dependencies directory.
+- If the dependency is not installed, print an error message and exit with code 1.
 
----
-
-# 🏷️ Creating tags
-
+## Clear
+Clears the global dependencies directory.
 ```bash
-stackit tag 0.0.1
+stackit clear [--all|--force]
 ```
+### Options
+- `--all`: Clear all dependencies.
+- `--force`: Clear all dependencies without confirmation.
 
-With push:
+### Actions
+- Remove all dependencies from the global dependencies directory that are not used in any project.
+- If `--all` is provided, remove all dependencies from the global dependencies directory but show a confirmation prompt if the dependency is used in any project.
+- If `--force` is provided, remove all dependencies from the global dependencies directory without confirmation.
 
+## Release
+Releases a new version of the stackit CLI.
 ```bash
-stackit tag 0.0.1 --push
+stackit release <dependency> [--tag <tag>] [--message|-m <message>] [--major | --minor | --patch] [--push]
 ```
 
----
+### Options
+- `--tag <tag>`: Create a new release with the provided tag.
+- `--message <message> | -m <message>`: Create a new release with the provided commit message (if not provided, use the tag name).
+- `--push`: Push the release tag to the remote repository.
+- `--major | --minor | --patch`: Create a new release and increment the version accordingly.
 
-# 🔄 Updating dependencies
-
-```bash
-stackit update
-```
-
----
-
-# ➕ Adding a dependency
-
-```bash
-stackit add https://github.com/user/repo.git --ref main
-```
-
----
-
-# 🔐 Private repositories
-
-**stackit** supports anything Git supports:
-
-## ✅ SSH (recommended)
-
-```bash
-git@github.com:user/repo.git
-```
-
-## ✅ HTTPS with credentials
-
-```bash
-https://github.com/user/repo.git
-```
-
-## ✅ Git Credential Manager
-
-Uses credentials saved on the system automatically.
-
----
-
-# 🧠 Name resolution
-
-Repositories are converted automatically:
-
-```
-https://github.com/user/repo.git
-→ user-repo
-```
-
----
-
-# ⚡ Features
-
-* ⚡ Fast installation via Git
-* 🧠 Smart version resolution
-* 🔐 Support for private repositories
-* 📁 Simple structure
-* 🔄 Easy updates
-* 🏷️ Tag-based versioning
-* 🚫 No registry
-
----
-
-# 🛠️ Roadmap
-
-* [ ] Full lockfile
-* [ ] Global repository cache
-* [ ] Parallel installation
-* [ ] Hooks (`postinstall`)
-
----
-
-# ⚠️ Limitations
-
-* Does not resolve transitive dependencies
-* No registry (by design)
-* Does not replace npm/yarn/pnpm
-
----
-
-# 💡 Use cases
-
-* Distributed monorepos
-* External plugins
-* Infrastructure as code
-* Sharing private libraries
-
----
-
-# 🤝 Contributing
-
-Pull requests are welcome!
-
-1. Fork
-2. Create your branch
-3. Commit
-4. Push
-5. Open a PR
-
----
-
-# 📄 License
-
-MIT
-
----
-
-# 👀 Comparison
-
-| Tool           | Complexity   | Git-native | Deterministic |
-| -------------- | ------------ | ---------- | -------------- |
-| npm            | High         | ❌         | ✅             |
-| git submodules | High         | ✅         | 😐             |
-| stackit        | Low          | ✅         | ✅             |
+### Actions
+- Update the `stackit.json` file with the new version.
+- Copy the project dependency to global dependencies directory (if no have global dependencies directory, create it).
+- Commit the changes to the global dependencies directory.
+- Create a new release tag.
+- Push the release tag to the remote repository if `--push` is provided.
+- If the dependency is not installed or not found, print an error message and exit with code 1.
