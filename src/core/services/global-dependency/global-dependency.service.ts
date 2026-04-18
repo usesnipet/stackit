@@ -3,10 +3,22 @@ import { GLOBAL_DEPENDENCIES_DIRECTORY, GLOBAL_DEPENDENCIES_JSON_PATH } from "..
 import { FileService } from "../file/file.service.js";
 import { GlobalStackit, globalStackitSchema } from "../../schema/index.js";
 import { ReadFileErrorType } from "../file/index.js";
-import { GlobalDependencyCheckoutError, GlobalDependencyCheckoutErrorType, GlobalDependencyCloneError, GlobalDependencyCloneErrorType, GlobalDependencyError, GlobalDependencyErrorType, GlobalDependencyInitError, GlobalDependencyInitErrorType } from "./global-dependency.errors.js";
+import {
+  GlobalDependencyCheckoutError,
+  GlobalDependencyCheckoutErrorType,
+  GlobalDependencyCloneError,
+  GlobalDependencyCloneErrorType,
+  GlobalDependencyError,
+  GlobalDependencyErrorType,
+  GlobalDependencyInitError,
+  GlobalDependencyInitErrorType,
+  GlobalDependencyReleaseError,
+  GlobalDependencyReleaseErrorType,
+} from "./global-dependency.errors.js";
 import { simpleGit } from "simple-git";
 import { join } from "path";
-import { mkdir, readdir } from "fs/promises";
+import { cp, mkdir, readdir, rm, stat } from "fs/promises";
+import { existsDir } from "../../../utils/ensure-dir.js";
 
 export type GlobalDependencyDeps = {
   fileService: FileService;
@@ -200,6 +212,124 @@ export const createGlobalDependencyService = (deps: GlobalDependencyDeps) => {
       return err(new GlobalDependencyError(GlobalDependencyErrorType.INVALID_URL, "Invalid repo URL"));
     }
   }
+
+  async function pathExistsGitMetadata(repoPath: string): Promise<boolean> {
+    try {
+      const s = await stat(join(repoPath, ".git"));
+      return s.isFile() || s.isDirectory();
+    } catch {
+      return false;
+    }
+  }
+
+  const listGitTags = async (repoPath: string): Promise<Result<string[], GlobalDependencyReleaseError>> => {
+    try {
+      const g = simpleGit(repoPath);
+      const tags = await g.tags();
+      return ok(tags.all);
+    } catch (c: unknown) {
+      return err(new GlobalDependencyReleaseError(GlobalDependencyReleaseErrorType.LIST_TAGS_FAILED, "Failed to list git tags", c));
+    }
+  };
+
+  const promoteVendorToGlobalRepo = async (params: {
+    globalRepoPath: string;
+    vendorPath: string;
+    tag: string;
+    commitMessage: string;
+    push: boolean;
+  }): Promise<Result<void, GlobalDependencyReleaseError>> => {
+    const { globalRepoPath, vendorPath, tag, commitMessage, push } = params;
+    try {
+      if (!(await existsDir(vendorPath))) {
+        return err(
+          new GlobalDependencyReleaseError(
+            GlobalDependencyReleaseErrorType.VENDOR_NOT_FOUND,
+            `Project vendor path not found: ${vendorPath}`,
+          ),
+        );
+      }
+      if (!(await existsDir(globalRepoPath))) {
+        return err(
+          new GlobalDependencyReleaseError(
+            GlobalDependencyReleaseErrorType.GLOBAL_REPO_NOT_FOUND,
+            `Global dependency repository not found: ${globalRepoPath}`,
+          ),
+        );
+      }
+      if (!(await pathExistsGitMetadata(globalRepoPath))) {
+        return err(
+          new GlobalDependencyReleaseError(
+            GlobalDependencyReleaseErrorType.NOT_A_GIT_REPO,
+            `Not a git repository: ${globalRepoPath}`,
+          ),
+        );
+      }
+      const g = simpleGit(globalRepoPath);
+      const tagList = await g.tags();
+      if (tagList.all.includes(tag)) {
+        return err(
+          new GlobalDependencyReleaseError(GlobalDependencyReleaseErrorType.TAG_EXISTS, `Tag "${tag}" already exists`),
+        );
+      }
+      try {
+        const rootEntries = await readdir(globalRepoPath, { withFileTypes: true });
+        for (const e of rootEntries) {
+          if (e.name === ".git") continue;
+          await rm(join(globalRepoPath, e.name), { recursive: true, force: true });
+        }
+      } catch (c: unknown) {
+        return err(
+          new GlobalDependencyReleaseError(GlobalDependencyReleaseErrorType.WORKTREE_CLEAR_FAILED, "Failed to clear global repository worktree", c),
+        );
+      }
+      try {
+        const vendorEntries = await readdir(vendorPath, { withFileTypes: true });
+        for (const e of vendorEntries) {
+          await cp(join(vendorPath, e.name), join(globalRepoPath, e.name), { recursive: true });
+        }
+      } catch (c: unknown) {
+        return err(new GlobalDependencyReleaseError(GlobalDependencyReleaseErrorType.COPY_FAILED, "Failed to copy vendor files into global repository", c));
+      }
+      await g.add(".");
+      const stagedNames = await g.diff(["--cached", "--name-only"]);
+      if (!stagedNames.trim()) {
+        return err(
+          new GlobalDependencyReleaseError(
+            GlobalDependencyReleaseErrorType.NO_CHANGES,
+            "No changes to commit after promoting vendor files",
+          ),
+        );
+      }
+      try {
+        await g.commit(commitMessage);
+      } catch (c: unknown) {
+        return err(new GlobalDependencyReleaseError(GlobalDependencyReleaseErrorType.COMMIT_FAILED, "Git commit failed", c));
+      }
+      try {
+        await g.addAnnotatedTag(tag, commitMessage);
+      } catch (c: unknown) {
+        return err(new GlobalDependencyReleaseError(GlobalDependencyReleaseErrorType.TAG_FAILED, "Failed to create annotated tag", c));
+      }
+      if (push) {
+        try {
+          const branch = (await g.revparse(["--abbrev-ref", "HEAD"])).trim();
+          if (branch && branch !== "HEAD") {
+            await g.push("origin", branch);
+          }
+          await g.pushTags("origin");
+        } catch (c: unknown) {
+          return err(new GlobalDependencyReleaseError(GlobalDependencyReleaseErrorType.PUSH_FAILED, "Failed to push commits or tags to origin", c));
+        }
+      }
+      return ok(undefined);
+    } catch (c: unknown) {
+      return err(
+        new GlobalDependencyReleaseError(GlobalDependencyReleaseErrorType.UNEXPECTED_ERROR, "Unexpected error during release", c),
+      );
+    }
+  };
+
   return {
     init: async (): Promise<Result<GlobalStackit, GlobalDependencyInitError>> => {
       const fileResult = await fileService.readJsonFile(GLOBAL_DEPENDENCIES_JSON_PATH, globalStackitSchema);
@@ -285,6 +415,9 @@ export const createGlobalDependencyService = (deps: GlobalDependencyDeps) => {
     addUsedIn,
     removeUsedIn,
     getRepoPath,
+    listGitTags,
+    promoteVendorToGlobalRepo,
+    setDependencyRef: updateBranchOrTag,
     getState: () => state,
   }
 }

@@ -55,3 +55,27 @@ export class GlobalDependencyCheckoutError extends Error {
     this.name = "GlobalDependencyCheckoutError";
   }
 }
+
+export enum GlobalDependencyReleaseErrorType {
+  NOT_A_GIT_REPO = "NOT_A_GIT_REPO",
+  GLOBAL_REPO_NOT_FOUND = "GLOBAL_REPO_NOT_FOUND",
+  VENDOR_NOT_FOUND = "VENDOR_NOT_FOUND",
+  WORKTREE_CLEAR_FAILED = "WORKTREE_CLEAR_FAILED",
+  COPY_FAILED = "COPY_FAILED",
+  NO_CHANGES = "NO_CHANGES",
+  COMMIT_FAILED = "COMMIT_FAILED",
+  TAG_EXISTS = "TAG_EXISTS",
+  TAG_FAILED = "TAG_FAILED",
+  LIST_TAGS_FAILED = "LIST_TAGS_FAILED",
+  PUSH_FAILED = "PUSH_FAILED",
+  UNEXPECTED_ERROR = "UNEXPECTED_ERROR",
+}
+
+export class GlobalDependencyReleaseError extends Error {
+  code = "GLOBAL_DEPENDENCY_RELEASE_ERROR";
+
+  constructor(public readonly type: GlobalDependencyReleaseErrorType, message: string, cause?: unknown) {
+    super(message, { cause });
+    this.name = "GlobalDependencyReleaseError";
+  }
+}

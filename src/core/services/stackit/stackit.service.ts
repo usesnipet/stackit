@@ -1,10 +1,43 @@
 import { resolve } from "node:path";
 import { Result, err, ok } from "neverthrow";
-import { InstallError, InstallErrorType, RemoveError, RemoveErrorType } from "./stackit.errors.js";
+import {
+  InstallError,
+  InstallErrorType,
+  ReleaseError,
+  ReleaseErrorType,
+  RemoveError,
+  RemoveErrorType,
+} from "./stackit.errors.js";
 import { GlobalDependencyCloneErrorType, GlobalDependencyErrorType, GlobalDependencyService } from "../global-dependency/index.js";
+import {
+  GlobalDependencyReleaseError,
+  GlobalDependencyReleaseErrorType,
+} from "../global-dependency/global-dependency.errors.js";
 import { ProjectDependencyService } from "../project-dependency/project-dependency.service.js";
 import { RemoveProjectDependencyErrorType } from "../project-dependency/project-dependency.errors.js";
 import { currentDir } from "../../../utils/current-dir.js";
+import { resolveReleaseTag, type SemverBump } from "../../../utils/resolve-release-tag.js";
+
+export type ReleaseOptions = {
+  tag?: string;
+  message?: string;
+  bump?: SemverBump;
+  push?: boolean;
+};
+
+function mapGlobalReleaseError(cause: GlobalDependencyReleaseError): ReleaseError {
+  switch (cause.type) {
+    case GlobalDependencyReleaseErrorType.VENDOR_NOT_FOUND:
+      return new ReleaseError(ReleaseErrorType.DEPENDENCY_NOT_INSTALLED, cause.message, cause);
+    case GlobalDependencyReleaseErrorType.GLOBAL_REPO_NOT_FOUND:
+    case GlobalDependencyReleaseErrorType.NOT_A_GIT_REPO:
+      return new ReleaseError(ReleaseErrorType.GLOBAL_REPO_MISSING, cause.message, cause);
+    case GlobalDependencyReleaseErrorType.LIST_TAGS_FAILED:
+      return new ReleaseError(ReleaseErrorType.PROMOTE_FAILED, cause.message, cause);
+    default:
+      return new ReleaseError(ReleaseErrorType.PROMOTE_FAILED, cause.message, cause);
+  }
+}
 
 type StackitServiceDeps = {
   globalDependencyService: GlobalDependencyService;
@@ -92,6 +125,62 @@ export const createStackitService = (deps: StackitServiceDeps) => {
         }
       }
       return ok(undefined);
+    },
+
+    release: async (
+      dependencyUrl: string,
+      options: ReleaseOptions,
+    ): Promise<Result<{ tag: string }, ReleaseError>> => {
+      const projectVendorPathResult = projectDependencyService.getRepoPath(dependencyUrl);
+      if (projectVendorPathResult.isErr()) {
+        return err(new ReleaseError(ReleaseErrorType.STATE_NOT_INITIALIZED, "State not initialized"));
+      }
+      const projectVendorPath = projectVendorPathResult.value;
+      if (projectVendorPath === undefined) {
+        return err(
+          new ReleaseError(ReleaseErrorType.DEPENDENCY_NOT_INSTALLED, "Dependency is not installed in this project"),
+        );
+      }
+      const globalPathResult = globalDependencyService.getRepoPath(dependencyUrl);
+      if (globalPathResult.isErr()) {
+        return err(
+          new ReleaseError(ReleaseErrorType.GLOBAL_REPO_MISSING, globalPathResult.error.message, globalPathResult.error),
+        );
+      }
+      const globalRepoPath = globalPathResult.value;
+      const tagsResult = await globalDependencyService.listGitTags(globalRepoPath);
+      if (tagsResult.isErr()) {
+        return err(mapGlobalReleaseError(tagsResult.error));
+      }
+      const tagResolved = resolveReleaseTag({
+        explicitTag: options.tag,
+        bump: options.bump,
+        existingTags: tagsResult.value,
+      });
+      if (tagResolved.isErr()) {
+        return err(new ReleaseError(ReleaseErrorType.TAG_RESOLUTION_FAILED, tagResolved.error));
+      }
+      const tag = tagResolved.value;
+      const commitMessage = (options.message?.trim() || tag).trim();
+      const promoteResult = await globalDependencyService.promoteVendorToGlobalRepo({
+        globalRepoPath,
+        vendorPath: projectVendorPath,
+        tag,
+        commitMessage,
+        push: Boolean(options.push),
+      });
+      if (promoteResult.isErr()) {
+        return err(mapGlobalReleaseError(promoteResult.error));
+      }
+      const refResult = await globalDependencyService.setDependencyRef(dependencyUrl, undefined, tag);
+      if (refResult.isErr()) {
+        return err(new ReleaseError(ReleaseErrorType.UPDATE_GLOBAL_REF_FAILED, refResult.error.message, refResult.error));
+      }
+      const updateDependencyVersionResult = await projectDependencyService.updateDependencyVersion(dependencyUrl, tag);
+      if (updateDependencyVersionResult.isErr()) {
+        return err(new ReleaseError(ReleaseErrorType.UPDATE_PROJECT_RELEASES_FAILED, updateDependencyVersionResult.error.message, updateDependencyVersionResult.error));
+      }
+      return ok({ tag });
     },
   }
 }

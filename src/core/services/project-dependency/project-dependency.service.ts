@@ -164,11 +164,33 @@ export const createProjectDependencyService = (deps: ProjectDependencyDeps) => {
     return ok(undefined);
   };
 
+  const updateDependencyVersion = async (url: string, tag: string): Promise<Result<void, ProjectDependencyError>> => {
+    if (!state) {
+      return err(new ProjectDependencyError(ProjectDependencyErrorType.UNEXPECTED_ERROR, "State not initialized"));
+    }
+    const dependency = state.dependencies[url];
+    if (!dependency) {
+      return err(new ProjectDependencyError(ProjectDependencyErrorType.DEPENDENCY_NOT_FOUND, "Dependency not found"));
+    }
+    const updatedState: ProjectStackit = {
+      ...state,
+      dependencies: { ...state.dependencies, [url]: tag },
+    };
+    const writeResult = await updateState(updatedState);
+    if (writeResult.isErr()) return err(writeResult.error);
+    return ok(undefined);
+  };
+
   return {
     init,
     install,
     remove,
+    updateDependencyVersion,
     getState: () => state,
+    getRepoPath: (url: string) => {
+      if (!state) return err(new ProjectDependencyError(ProjectDependencyErrorType.STATE_NOT_INITIALIZED, "State not initialized"));
+      return getRepoPath(state, url);
+    },
   }
 }
 

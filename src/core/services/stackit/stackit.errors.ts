@@ -69,3 +69,26 @@ export class RemoveError extends StackitError {
     this.name = "RemoveError";
   }
 }
+
+export enum ReleaseErrorType {
+  STATE_NOT_INITIALIZED = "STATE_NOT_INITIALIZED",
+  DEPENDENCY_NOT_INSTALLED = "DEPENDENCY_NOT_INSTALLED",
+  GLOBAL_REPO_MISSING = "GLOBAL_REPO_MISSING",
+  TAG_RESOLUTION_FAILED = "TAG_RESOLUTION_FAILED",
+  PROMOTE_FAILED = "PROMOTE_FAILED",
+  UPDATE_GLOBAL_REF_FAILED = "UPDATE_GLOBAL_REF_FAILED",
+  UPDATE_PROJECT_RELEASES_FAILED = "UPDATE_PROJECT_RELEASES_FAILED",
+}
+
+export class ReleaseError extends StackitError {
+  override code = "RELEASE_ERROR";
+
+  constructor(
+    public readonly type: ReleaseErrorType,
+    message: string = "Error releasing dependency",
+    cause?: unknown,
+  ) {
+    super(message, { cause });
+    this.name = "ReleaseError";
+  }
+}
