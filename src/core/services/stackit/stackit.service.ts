@@ -13,6 +13,7 @@ export const createStackitService = (deps: StackitServiceDeps) => {
 
   return {
     init: projectDependencyService.init,
+    remove: projectDependencyService.remove,
     install: async (
       dependencyUrl: string,
       branch?: string,
@@ -20,8 +21,6 @@ export const createStackitService = (deps: StackitServiceDeps) => {
     ): Promise<Result<void, InstallError>> => {
       const state = projectDependencyService.getState();
       if (!state) return err(new InstallError(InstallErrorType.STATE_NOT_INITIALIZED, "State not initialized"));
-
-      if (state.dependencies[dependencyUrl]) return err(new InstallError(InstallErrorType.DEPENDENCY_ALREADY_INSTALLED, "Dependency already installed"));
 
       const globalInstallResult = await globalDependencyService.install(dependencyUrl, branch, tag);
       if (globalInstallResult.isErr()) {

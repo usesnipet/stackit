@@ -1,6 +1,15 @@
-import { cp } from "fs/promises";
+import { cp, rm } from "fs/promises";
 import { Result, err, ok } from "neverthrow";
-import { InitProjectDependencyError, InitProjectDependencyErrorType, InstallProjectDependencyError, InstallProjectDependencyErrorType, ProjectDependencyError, ProjectDependencyErrorType } from "./project-dependency.errors.js";
+import {
+  InitProjectDependencyError,
+  InitProjectDependencyErrorType,
+  InstallProjectDependencyError,
+  InstallProjectDependencyErrorType,
+  ProjectDependencyError,
+  ProjectDependencyErrorType,
+  RemoveProjectDependencyError,
+  RemoveProjectDependencyErrorType,
+} from "./project-dependency.errors.js";
 import { FileService } from "../file/file.service.js";
 import { ProjectStackit, projectStackitSchema } from "../../schema/index.js";
 import { PROJECT_JSON_NAME, PROJECT_JSON_PATH } from "../../constants/index.js";
@@ -29,8 +38,8 @@ export const createProjectDependencyService = (deps: ProjectDependencyDeps) => {
     const stackitJsonPath = join(dir, PROJECT_JSON_NAME);
     return fileService.writeJsonFile(stackitJsonPath, projectStackit, projectStackitSchema);
   }
-  async function updateState(state: ProjectStackit): Promise<Result<ProjectStackit, ProjectDependencyError>> {
-    state = state;
+  async function updateState(updatedState: ProjectStackit): Promise<Result<ProjectStackit, ProjectDependencyError>> {
+    state = updatedState;
     const fileResult = await fileService.writeJsonFile(PROJECT_JSON_PATH(projectDir), state, projectStackitSchema);
     if (fileResult.isErr()) {
       return err(new ProjectDependencyError(ProjectDependencyErrorType.UNEXPECTED_ERROR, "Unexpected error writing project dependencies JSON file", fileResult.error));
@@ -118,9 +127,47 @@ export const createProjectDependencyService = (deps: ProjectDependencyDeps) => {
     return ok(undefined);
   }
 
+  const remove = async (url: string): Promise<Result<void, RemoveProjectDependencyError>> => {
+    if (!state) {
+      return err(
+        new RemoveProjectDependencyError(RemoveProjectDependencyErrorType.STATE_NOT_INITIALIZED, "State not initialized"),
+      );
+    }
+    const projectDependencyPath = state.dependencies[url];
+    if (projectDependencyPath === undefined) {
+      return err(
+        new RemoveProjectDependencyError(
+          RemoveProjectDependencyErrorType.DEPENDENCY_NOT_INSTALLED,
+          "Dependency is not installed in this project",
+        ),
+      );
+    }
+    try {
+      await rm(projectDependencyPath, { recursive: true, force: true });
+    } catch (error) {
+      return err(
+        new RemoveProjectDependencyError(RemoveProjectDependencyErrorType.REMOVE_FAILED, "Failed to remove dependency from disk", error),
+      );
+    }
+    const restDependencies = { ...state.dependencies };
+    delete restDependencies[url];
+    const updateResult = await updateState({ ...state, dependencies: restDependencies });
+    if (updateResult.isErr()) {
+      return err(
+        new RemoveProjectDependencyError(
+          RemoveProjectDependencyErrorType.UPDATE_STATE_FAILED,
+          "Failed to update project dependencies state",
+          updateResult.error,
+        ),
+      );
+    }
+    return ok(undefined);
+  };
+
   return {
     init,
     install,
+    remove,
     getState: () => state,
   }
 }

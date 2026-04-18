@@ -43,3 +43,19 @@ export class InstallProjectDependencyError extends Error {
     this.name = "InstallProjectDependencyError";
   }
 }
+
+export enum RemoveProjectDependencyErrorType {
+  STATE_NOT_INITIALIZED = "STATE_NOT_INITIALIZED",
+  DEPENDENCY_NOT_INSTALLED = "DEPENDENCY_NOT_INSTALLED",
+  REMOVE_FAILED = "REMOVE_FAILED",
+  UPDATE_STATE_FAILED = "UPDATE_STATE_FAILED",
+}
+
+export class RemoveProjectDependencyError extends Error {
+  code = "REMOVE_PROJECT_DEPENDENCY_ERROR";
+
+  constructor(public readonly type: RemoveProjectDependencyErrorType, message: string, cause?: unknown) {
+    super(message, { cause });
+    this.name = "RemoveProjectDependencyError";
+  }
+}
