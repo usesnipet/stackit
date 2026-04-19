@@ -1,4 +1,5 @@
-import { readFile, writeFile } from "fs/promises";
+import { mkdir, readFile, writeFile } from "fs/promises";
+import { dirname } from "node:path";
 import { Result, err, ok } from "neverthrow";
 import z from "zod";
 import { ReadFileError, ReadFileErrorType, WriteFileError, WriteFileErrorType } from "./file.errors.js";
@@ -70,6 +71,7 @@ export const createFileService = () => {
         }
       }
       try {
+        await mkdir(dirname(path), { recursive: true });
         await writeFile(path, JSON.stringify(content, null, 2));
       } catch (error) {
         return err(

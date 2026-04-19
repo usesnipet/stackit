@@ -60,7 +60,7 @@ export const createProjectDependencyService = (deps: ProjectDependencyDeps) => {
       return ok(state);
     }
     if (!createIfNotFound) {
-      return err(new InitProjectDependencyError(InitProjectDependencyErrorType.STACKIT_JSON_NOT_FOUND));
+      return ok(null);
     }
     const writeResult = await writeStackitProjectJson(
       currentDir(),

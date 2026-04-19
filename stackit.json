@@ -1,0 +1,6 @@
+{
+  "dependencies": {
+    "https://github.com/usesnipet/core": "vendor/deps/github.com/core"
+  },
+  "dir": "vendor"
+}

@@ -184,3 +184,5 @@ export const createStackitService = (deps: StackitServiceDeps) => {
     },
   }
 }
+
+export type StackitService = ReturnType<typeof createStackitService>;
